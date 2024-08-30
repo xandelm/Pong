@@ -25,10 +25,22 @@ float ballYSpeed = 5.0f;
 int score1 = 0;
 int score2 = 0;
 
-void display() {
+int barHorizontalPadding = 25;
+
+void display()
+{
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Desenha o placar
+    // Draw bar1
+    glRectf(10, bar1Y, 10 + barWidth, bar1Y + barHeight);
+
+    // Draw bar2
+    glRectf(width - 10 - barWidth, bar2Y, width - 10, bar2Y + barHeight);
+
+    // Draw ball
+    glRectf(ballX - ballSize / 2, ballY - ballSize / 2, ballX + ballSize / 2, ballY + ballSize / 2);
+
+    // Draw score
     glRasterPos2f(width / 2 - 50, height - 50);
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '0' + score1);
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ' ');
@@ -36,57 +48,110 @@ void display() {
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ' ');
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, '0' + score2);
 
+    glBegin(GL_QUADS);
+
+    glVertex2f(-0.5f, -0.5f); // x, y
+    glVertex2f(0.5f, -0.5f);
+    glVertex2f(0.5f, 0.5f);
+    glVertex2f(-0.5f, 0.5f);
+    glEnd();
+
     // Espaço para desenhar as barras e a bola
 
     glutSwapBuffers();
 }
 
-void update(int value) {
-    // Lógica de atualização do jogo, incluindo movimentação das barras e bola
+void update(int value)
+{
 
-    // Espaço para a lógica de movimentação das barras
+    // lógica de movimentação e colisão da bola
+    ballX += ballXSpeed;
+    ballY += ballYSpeed;
 
-    // Espaço para a lógica de movimentação e colisão da bola
+    // colisão com chão e teto
+    if (ballY + ballSize / 2 > height || ballY - ballSize / 2 < 0)
+    {
+        ballYSpeed = -ballYSpeed;
+    }
 
-    // Espaço para a lógica de contagem de pontos
+    // colisão com barras
+    if (
+        (ballX - ballSize / 2 < barWidth + 10 && ballY > bar1Y && ballY < bar1Y + barHeight) ||      // colisão barra esquerda
+        (ballX + ballSize / 2 > width - barWidth - 10 && ballY > bar2Y && ballY < bar2Y + barHeight) // colisão barra direita
+    )
+    {
+        ballXSpeed = -ballXSpeed;
+    }
+
+    // colisão com paredes esquerda e direita
+    if (ballX + ballSize / 2 > width || ballX - ballSize / 2 < 0)
+    {
+        if (ballX + ballSize / 2 > width)
+            score1++;
+        if (ballX - ballSize / 2 < 0)
+            score2++;
+
+        // reseta posição da bola
+        ballX = width / 2;
+        ballY = height / 2;
+        ballXSpeed = 5.0f;
+        ballYSpeed = 5.0f;
+    }
 
     glutPostRedisplay();
-    glutTimerFunc(16, update, 0); // Aproximadamente 60 FPS
+    glutTimerFunc(16, update, 0);
 }
 
-void handleKeysDown(unsigned char key, int x, int y) {
+void handleKeys(unsigned char key, int x, int y)
+{
     // Espaço para configurar o estado das teclas ao pressionar
-}
-
-void handleKeysUp(unsigned char key, int x, int y) {
-    // Espaço para configurar o estado das teclas ao soltar
+    switch (key)
+    {
+    case 'w':
+        if (bar1Y + barHeight < height)
+            bar1Y += barSpeed;
+        break;
+    case 's':
+        if (bar1Y > 0)
+            bar1Y -= barSpeed;
+        break;
+    case '8':
+        if (bar2Y + barHeight < height)
+            bar2Y += barSpeed;
+        break;
+    case '2':
+        if (bar2Y > 0)
+            bar2Y -= barSpeed;
+    default:
+        break;
+    }
 }
 
 // Função para evitar o redimensionamento da janela
-void reshape(int w, int h) {
+void reshape(int w, int h)
+{
     glutReshapeWindow(width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // aqui a origem do sistema de coordenadas é colocada na parte inferior à esquerda
-    gluOrtho2D(0.0, width, 0.0, height); 
+    gluOrtho2D(0.0, width, 0.0, height);
     glutPostRedisplay();
 }
 
-void Init(int argc, char** argv)
+void Init(int argc, char **argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(width, height);
     glutCreateWindow("TP3 - Jogo Pong");
-
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     Init(argc, argv);
     glutDisplayFunc(display);
     glutTimerFunc(16, update, 0);
-    glutKeyboardFunc(handleKeysDown);
-    glutKeyboardUpFunc(handleKeysUp);
+    glutKeyboardFunc(handleKeys);
     glutReshapeFunc(reshape);
 
     glutMainLoop();
